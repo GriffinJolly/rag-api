@@ -1,0 +1,57 @@
+version: "3.9"
+services:
+
+  # ── Your FastAPI app ──────────────────────────────
+  api:
+    build: .                        # build from your Dockerfile
+    ports:
+      - "8000:8000"                 # your laptop:container
+    volumes:
+      - ./app:/app/app              # live reload — code changes reflect instantly
+    env_file:
+      - .env                        # loads your secret keys
+    depends_on:
+      - qdrant
+      - redis
+      - mlflow
+    networks:
+      - rag-network
+
+  # ── Qdrant vector database ────────────────────────
+  qdrant:
+    image: qdrant/qdrant            # official image, no build needed
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage # persist data between restarts
+    networks:
+      - rag-network
+
+  # ── Redis cache ───────────────────────────────────
+  redis:
+    image: redis:7-alpine           # lightweight Redis
+    ports:
+      - "6379:6379"
+    networks:
+      - rag-network
+
+  # ── MLflow tracking server ────────────────────────
+  mlflow:
+    image: ghcr.io/mlflow/mlflow
+    ports:
+      - "5000:5000"
+    command: mlflow server --host 0.0.0.0 --port 5000
+    volumes:
+      - mlflow_data:/mlflow
+    networks:
+      - rag-network
+
+# ── Named volumes (persistent storage) ───────────────
+volumes:
+  qdrant_data:
+  mlflow_data:
+
+# ── Internal network so containers talk to each other ─
+networks:
+  rag-network:
+    driver: bridge

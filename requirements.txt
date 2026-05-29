@@ -1,0 +1,11 @@
+﻿fastapi
+uvicorn
+sentence-transformers
+qdrant-client
+redis
+mlflow
+ragas
+openai
+pypdf
+python-multipart
+python-dotenv
