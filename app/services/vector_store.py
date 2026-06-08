@@ -3,7 +3,9 @@ from qdrant_client.models import VectorParams, Distance, PointStruct
 from typing import List, Dict
 import uuid
 
-client = QdrantClient(host="qdrant", port=6333)
+from app.config import QDRANT_HOST, QDRANT_PORT
+
+client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 
 COLLECTION_NAME = "documents"
 VECTOR_SIZE = 384
@@ -47,17 +49,23 @@ def store_chunks(chunks: List[Dict], vectors: List[List[float]], filename: str):
 
 
 def search_similar_chunks(query_vector: List[float], top_k: int = 20) -> List[Dict]:
-    results = client.search(
+    ensure_collection_exists()
+    results = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
-        limit=top_k
+        query=query_vector,
+        limit=top_k,
+        with_payload=True
     )
-    return [
-        {
-            "text":        hit.payload["text"],
-            "filename":    hit.payload["filename"],
-            "page_number": hit.payload["page_number"],
-            "score":       hit.score
-        }
-        for hit in results
-    ]
+    chunks = []
+    for hit in results.points:
+        payload = hit.payload or {}
+        chunks.append(
+            {
+                "text":        payload.get("text", ""),
+                "filename":    payload.get("filename", ""),
+                "page_number": payload.get("page_number", 0),
+                "score":       hit.score
+            }
+        )
+
+    return chunks

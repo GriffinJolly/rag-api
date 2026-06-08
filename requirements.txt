@@ -5,7 +5,7 @@ qdrant-client
 redis
 mlflow
 ragas
-openai
+httpx
 pypdf
 python-multipart
 python-dotenv

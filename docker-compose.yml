@@ -1,41 +1,43 @@
-version: "3.9"
 services:
 
-  # ── Your FastAPI app ──────────────────────────────
   api:
-    build: .                        # build from your Dockerfile
+    build: .
     ports:
-      - "8000:8000"                 # your laptop:container
+      - "8000:8000"
     volumes:
-      - ./app:/app/app              # live reload — code changes reflect instantly
+      - ./app:/app/app
     env_file:
-      - .env                        # loads your secret keys
+      - .env
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - OLLAMA_HOST=ollama
+      - OLLAMA_PORT=11434
+      - OLLAMA_MODEL=llama3.2
     depends_on:
       - qdrant
       - redis
       - mlflow
+      - ollama
     networks:
       - rag-network
 
-  # ── Qdrant vector database ────────────────────────
   qdrant:
-    image: qdrant/qdrant            # official image, no build needed
+    image: qdrant/qdrant
     ports:
       - "6333:6333"
     volumes:
-      - qdrant_data:/qdrant/storage # persist data between restarts
+      - qdrant_data:/qdrant/storage
     networks:
       - rag-network
 
-  # ── Redis cache ───────────────────────────────────
   redis:
-    image: redis:7-alpine           # lightweight Redis
+    image: redis:7-alpine
     ports:
       - "6379:6379"
     networks:
       - rag-network
 
-  # ── MLflow tracking server ────────────────────────
   mlflow:
     image: ghcr.io/mlflow/mlflow
     ports:
@@ -46,12 +48,20 @@ services:
     networks:
       - rag-network
 
-# ── Named volumes (persistent storage) ───────────────
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - rag-network
+
 volumes:
   qdrant_data:
   mlflow_data:
+  ollama_data:
 
-# ── Internal network so containers talk to each other ─
 networks:
   rag-network:
     driver: bridge
